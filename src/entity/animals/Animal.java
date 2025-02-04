@@ -136,8 +136,7 @@ public abstract class Animal extends Creature {
 
     public void eat(Location location, Creature creature) {
         try {
-            boolean go = true;
-            double needSaturationStart = 0.0;
+            location.getLock().lock();
 
             HashMap<String, Integer> eatHunter = switch (creature.getClass().getSimpleName()) {
                 case "Wolf" -> Settings.eatWolf;
@@ -159,8 +158,9 @@ public abstract class Animal extends Creature {
             };
 
             int size = location.getAnimal().size();
+            boolean go = true;
+            double needSaturationStart = 0.0;
 
-            location.getLock().lock();
             while (needSaturationStart < creature.getNeedSaturation() && go) {
 
                 if (!location.getAnimal().isEmpty()) {
@@ -189,8 +189,8 @@ public abstract class Animal extends Creature {
                             creature.setSaturation(creature.getSaturation() - 1);
                             if (creature.getSaturation() == 0) {
                                 location.getAnimal().remove(creature);
+                                go = false;
                             }
-                            go = false;
                         }
                     }
                 }
@@ -219,21 +219,25 @@ public abstract class Animal extends Creature {
             }
         }
 
-        int speedNext = new Random().nextInt(0, creature.getSpeed());
+        int speed = creature.getSpeed();
 
-        while (speedNext > 0) {
+        if (speed <= 0) {
+            return;
+        }
+
+        while (speed > 0) {
             int xy = new Random().nextInt(0, 3);
 
             if (xy == 0) {
                 rowsLocationNew = rowsLocation + 1;
-                if (rowsLocationNew > island.getRows()) {
+                if (rowsLocationNew > island.getRows() - 1) {
                     rowsLocationNew = 0;
                 }
             }
 
             if (xy == 1) {
                 columnsLocationNew = columnsLocation + 1;
-                if (columnsLocationNew > island.getColumns()) {
+                if (columnsLocationNew > island.getColumns() - 1) {
                     columnsLocationNew = 0;
                 }
             }
@@ -241,27 +245,28 @@ public abstract class Animal extends Creature {
             if (xy == 2) {
                 rowsLocationNew = rowsLocation - 1;
                 if (rowsLocationNew < 0) {
-                    rowsLocationNew = island.getRows();
+                    rowsLocationNew = island.getRows() - 1;
                 }
             }
 
             if (xy == 3) {
                 columnsLocationNew = columnsLocation - 1;
                 if (columnsLocationNew < 0) {
-                    columnsLocationNew = island.getColumns();
+                    columnsLocationNew = island.getColumns() - 1;
                 }
             }
+            speed--;
+        }
 
-            long count = island.getLocation(rowsLocationNew, columnsLocationNew).getAnimal().stream().filter(x -> x.getClass() == creature.getClass()).count();
-            long max = Settings.maxCreatureLocation.get(creature.getClass());
+        long count = island.getLocation(rowsLocationNew, columnsLocationNew).getAnimal().stream().filter(x -> x.getClass() == creature.getClass()).count();
+        long max = Settings.maxCreatureLocation.get(creature.getClass());
 
-            if (count < max) {
-                island.getLocation(rowsLocationNew, columnsLocationNew).addCreature(creature.clone());
-                island.getLocation(rowsLocation, columnsLocation).getAnimal().remove(creature);
-            } else {
-                speedNext = 0;
-            }
-            speedNext--;
+        if (count >= max) {
+            return;
+        } else {
+            island.getLocation(rowsLocationNew, columnsLocationNew).addCreature(creature.clone());
+            island.getLocation(rowsLocation, columnsLocation).getAnimal().remove(creature);
         }
     }
 }
+

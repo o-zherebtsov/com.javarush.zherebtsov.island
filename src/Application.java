@@ -19,26 +19,34 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Application {
-    public static void main(String[] args) throws InterruptedException {
-        Location location = new Location();
-        System.out.println(location.getAnimal().size());
-        System.out.println(location.getAnimal());
-        synchronized (location) {
-            if (location.getAnimal(). isEmpty()) {
-                return;
+    public static void main(String[] args) throws InterruptedException, CloneNotSupportedException {
+
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+
+        Island island = new Island(Settings.rowsCount, Settings.columnsCount);
+        island.locationFactory();
+        Statistics statistics = new Statistics(island);
+        statistics.run();
+
+        int day = 1;
+
+        while (day <= Settings.maxDay) {
+            for (Location location : island.locationsList()) {
+                for (Creature creature : location.getAnimal()) {
+                    Animal animal = (Animal) creature;
+                    animal.eat(location, creature);
+                }
+                Animal.reproduction(location);
+                for (Creature creature : location.getAnimal()) {
+                    Animal animal = (Animal) creature;
+                    animal.move(island, creature);
+                }
             }
+
+
+            statistics.run();
+
+            day++;
         }
-        location.getLock().lock();
-        for (Creature creature : location.getAnimal()) {
-            Animal animal = (Animal) creature;
-            animal.eat(location, creature);
-        }
-        location.getLock().unlock();
-        System.out.println(location.getAnimal().size());
-        System.out.println(location.getAnimal());
-        
-        Animal.reproduction(location);
-        System.out.println(location.getAnimal().size());
-        System.out.println(location.getAnimal());
     }
 }

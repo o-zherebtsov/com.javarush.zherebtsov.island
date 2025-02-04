@@ -12,9 +12,12 @@ import java.util.stream.Stream;
 
 public class Settings {
 
+    // Характеристики дней
+    public final static int maxDay = 25;
+
     // Характеристики острова
-    public final static int columnsCount = 3;
-    public final static int rowsCount = 3;
+    public final static int columnsCount = 10;
+    public final static int rowsCount = 10;
 
     // Характеристики локации
     public final static int maxAnimal = 15;
