@@ -7,43 +7,37 @@ import entity.map.Island;
 import entity.map.Location;
 import entity.plants.Plant;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Queue;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static entity.map.Location.newPlant;
 
-public class LocationAnimalServise {
+public class LocationAnimalServise implements Runnable {
 
-    private final Creature creature;
-    private final Island island;
+    private Island island;
 
-    public Queue<Task> getTasks() {
-        return tasks;
-    }
-
-    private final Queue<Task> tasks = new ConcurrentLinkedQueue<>();
-
-    public LocationAnimalServise(Creature creature, Island island) {
-        this.creature = creature;
+    public LocationAnimalServise(Island island) {
         this.island = island;
     }
 
-//    @Override
-//    public void run() {
-//        processOneCell();
-//    }
+    @Override
+    public void run() {
+        try {
+            life();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-    public void processOneCell(Location location) {
-        location.getLock().lock();
-        location.getAnimal().forEach(creature1 -> {
-            tasks.add(new Task(creature, location, island));
-        });
-        location.getLock().unlock();
-
-//        tasks.forEach(Task::doTask);
-
+    private void life() throws CloneNotSupportedException {
+        List<Location> locations = island.locationsList();
+        for (Location location : locations) {
+            for (Creature creature : location.getAnimal()) {
+                Animal animal = (Animal) creature;
+                animal.eat(location, creature);
+                animal.move(island, creature);
+            }
+            Animal.reproduction(location);
+        }
     }
 }

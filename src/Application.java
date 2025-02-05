@@ -1,52 +1,39 @@
 import config.Settings;
 import entity.Creature;
-import entity.animals.Animal;
-import entity.animals.predators.Wolf;
 import entity.map.Island;
 import entity.map.Location;
 import util.LocationAnimalServise;
-import util.Rnd;
 import util.Statistics;
-import util.Task;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.*;
 
 public class Application {
-    public static void main(String[] args) throws InterruptedException, CloneNotSupportedException {
-
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+    public static void main(String[] args) {
 
         Island island = new Island(Settings.rowsCount, Settings.columnsCount);
         island.locationFactory();
         Statistics statistics = new Statistics(island);
+        System.out.println("День 1");
         statistics.run();
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        for (int i = 1; i <= Settings.maxDay; i++) {
+            List<Future<?>> tasks = new ArrayList<>();
+            tasks.add(executorService.submit(new LocationAnimalServise(island)));
 
-        int day = 1;
-
-        while (day <= Settings.maxDay) {
-            for (Location location : island.locationsList()) {
-                for (Creature creature : location.getAnimal()) {
-                    Animal animal = (Animal) creature;
-                    animal.eat(location, creature);
+            if (!tasks.isEmpty()) {
+                for (Future<?> future : tasks) {
+                    try {
+                        future.get();
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
-                Animal.reproduction(location);
-                for (Creature creature : location.getAnimal()) {
-                    Animal animal = (Animal) creature;
-                    animal.move(island, creature);
-                }
+                System.out.println("День " + (i + 1));
+                statistics.run();
             }
-
-
-            statistics.run();
-
-            day++;
         }
+        executorService.shutdown();
     }
 }
